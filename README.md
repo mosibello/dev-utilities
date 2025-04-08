@@ -1,11 +1,9 @@
-Frontend for ([Mujmua](https://mujmua.vercel.app/))
-
 ## Installing
 
 ```bash
 # From Source
-git clone https://github.com/mosibello/mujmua.git
-cd mujmua
+git clone https://github.com/mosibello/dev-utilities.git
+cd dev-utilities
 ```
 
 then install dependencies
@@ -24,5 +22,3 @@ npm run dev
 npm run build
 npm start
 ```
-
-([Documentation](https://docs.google.com/document/d/1z4Y-stDDcnbYT8MuxLGdPm9iD4iPU0cl6HKTUm25k00/edit?usp=sharing))
