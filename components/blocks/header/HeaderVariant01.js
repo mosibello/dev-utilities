@@ -30,7 +30,7 @@ const HeaderVariant01 = () => {
             >
               <div className="b__header__variant01__logo-wrapper u__cursor-pointer">
                 <span className="b__header__variant01__logo u__font-family-heading u__f-700 u__text-branding-primary u__h3 u__letter-spacing--tight">
-                  {organization.toLowerCase() || ``}
+                  😴 {organization.toLowerCase() || ``}
                 </span>
               </div>
             </Link>
@@ -40,14 +40,16 @@ const HeaderVariant01 = () => {
                   <Button
                     theme={`secondary`}
                     title={`Contribute`}
-                    destination={`/auth/sign-up`}
+                    destination={`https://github.com/mosibello/dev-utilities`}
+                    target="_blank"
                     size="small"
                   />
                   <div className="ps-3">
                     <Button
                       theme={`secondary`}
                       title={`Back to bokharilovesyou.com`}
-                      destination={`/auth/sign-up`}
+                      destination={`https://bokharilovesyou.com/`}
+                      target="_blank"
                       size="small"
                     />
                   </div>

@@ -55,7 +55,7 @@
         justify-content: center;
         align-items: center;
         height: 100%;
-        @media (min-width: 992px) {
+        @media (min-width: 768px) {
           display: none;
         }
       }
@@ -71,7 +71,7 @@
           width: 100%;
           &--active {
             display: block;
-            @media (min-width: 992px) {
+            @media (min-width: 768px) {
               display: none !important;
             }
           }
@@ -177,7 +177,7 @@
         }
         &-large {
           display: none;
-          @media (min-width: 992px) {
+          @media (min-width: 768px) {
             display: block;
           }
           nav {

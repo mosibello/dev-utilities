@@ -735,5 +735,26 @@
       --bs-gutter-y: 1.25rem;
     }
   }
+  &__branding-square {
+    width: 65px;
+    height: 65px;
+    position: relative;
+    background-color: #9d7cee;
+    border-radius: 12px;
+    margin-left: auto;
+    margin-right: auto;
+    &__icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 40px;
+    }
+  }
+  &__util-container {
+    max-width: 42rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
   // New component styles here
 }
