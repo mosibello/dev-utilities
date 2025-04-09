@@ -1,5 +1,5 @@
-import "./globals.css";
 import "@/styles/index.scss";
+import "./globals.css";
 import Layout from "@/components/wrappers/Layout";
 import localFont from "next/font/local";
 import NextTopLoader from "nextjs-toploader";

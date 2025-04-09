@@ -263,10 +263,10 @@ button {
 
 .c__form {
   label {
-    color: var(--t-form-label-color);
-    margin-bottom: 0.35rem;
-    display: block;
-    font-size: 0.85rem;
+    // color: var(--t-form-label-color);
+    // margin-bottom: 0.5rem;
+    // display: block;
+    // font-size: 0.875rem;
   }
   input[type="text"],
   input[type="email"],
@@ -277,23 +277,23 @@ button {
   select,
   .c__form__select,
   textarea {
-    color: var(--t-body-color);
-    border: 1px solid var(--t-form-input-border-color);
-    outline: none;
-    border-radius: var(--t-form-input-border-radius);
-    transition: 0.2s ease;
-    box-shadow: var(--t-form-input-box-shadow);
-    padding: 0.65rem 0.75rem;
-    width: 100%;
-    font-size: 0.95rem;
-    background-color: var(--t-cp-base-white);
+    // color: var(--t-body-color);
+    // border: 1px solid var(--t-form-input-border-color);
+    // outline: none;
+    // border-radius: var(--t-form-input-border-radius);
+    // transition: 0.2s ease;
+    // box-shadow: var(--t-form-input-box-shadow);
+    // padding: 0.65rem 0.75rem;
+    // width: 100%;
+    // font-size: 0.95rem;
+    // background-color: var(--t-cp-base-white);
     &:focus,
     &:focus-within,
     &:focus-visible {
-      border-color: var(--t-form-input-focus-border-color);
-      box-shadow: var(--t-form-input-focus-box-shadow);
-      outline: none;
-      transition: 0.2s ease;
+      // border-color: var(--t-form-input-focus-border-color);
+      // box-shadow: var(--t-form-input-focus-box-shadow);
+      // outline: none;
+      // transition: 0.2s ease;
     }
   }
   ::-webkit-input-placeholder,

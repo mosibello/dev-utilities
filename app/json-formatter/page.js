@@ -5,7 +5,7 @@ import Paragraph from "@/components/ui/Paragraph";
 import JsonFormatter from "@/components/modules/JsonFormatter";
 import { getMetaData } from "@/lib/seo";
 
-export default async function JsonFormatterIndex() {
+export default async function Page() {
   return (
     <>
       <Bounded className="b__size-fit-to-screen b__hero_variant01 relative">
@@ -15,7 +15,7 @@ export default async function JsonFormatterIndex() {
               <div className="c__branding-square mb-[1.5rem]">
                 <div className="c__branding-square__icon">😴</div>
               </div>
-              <Heading tag={`h1`} className={`u__h2`}>
+              <Heading tag={`h1`} className={`u__h3`}>
                 JSON formatter
               </Heading>
               <Paragraph className={`u__h6`}>

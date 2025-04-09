@@ -2,16 +2,30 @@
 import React from "react";
 import Select from "react-select";
 
+export const Label = ({ name, children }) => {
+  return (
+    <label
+      className="c__form__label text-sm mb-2 flex font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      htmlFor={name}
+    >
+      {children}
+    </label>
+  );
+};
+
 export const Input = ({
   name,
   autoComplete,
   type,
   placeholder,
+  onChange,
   defaultValue,
   required,
   pattern,
   errors,
   readOnly,
+  value,
+  className,
 }) => {
   return (
     <input
@@ -19,18 +33,22 @@ export const Input = ({
       id={name}
       aria-labelledby={name}
       autoComplete={autoComplete}
-      className={`c__form__input ${
-        errors[elem.name] ? `c__form__input--error` : ``
+      className={`c__form__input ${className ? className : ``} ${
+        errors?.name ? `c__form__input--error` : ``
       }`}
       type={type}
       placeholder={placeholder}
       required={required}
       readOnly={readOnly}
+      onChange={onChange}
+      value={value}
       defaultValue={defaultValue ? defaultValue : null}
-      {...register(name, {
-        required: required ? required.message : required,
-        pattern: pattern ? pattern : null,
-      })}
+      {...(typeof register === "function"
+        ? register(name, {
+            required: required?.message ?? required,
+            pattern: pattern ?? undefined,
+          })
+        : {})}
     />
   );
 };
@@ -40,34 +58,41 @@ export const Textarea = ({
   autoComplete,
   type,
   placeholder,
-  defaultValue,
   required,
   pattern,
   errors,
   readOnly,
+  onChange,
+  rows,
+  value,
+  className,
 }) => {
   return (
     <textarea
       name={name}
       id={name}
       aria-labelledby={name}
-      className={`c__form__input ${
-        errors[elem.name] ? `c__form__input--error` : ``
+      className={`c__form__input ${className ? className : ``} ${
+        errors?.name ? `c__form__input--error` : ``
       }`}
       type={type}
       placeholder={placeholder}
       autoComplete={autoComplete}
       readOnly={readOnly}
-      defaultValue={defaultValue ? defaultValue : null}
-      {...register(name, {
-        required: required ? required.message : required,
-        pattern: pattern ? pattern : null,
-      })}
+      onChange={onChange}
+      rows={rows}
+      value={value}
+      {...(typeof register === "function"
+        ? register(name, {
+            required: required?.message ?? required,
+            pattern: pattern ?? undefined,
+          })
+        : {})}
     ></textarea>
   );
 };
 
-export const Select = ({
+export default ({
   isMulti,
   options,
   className,
