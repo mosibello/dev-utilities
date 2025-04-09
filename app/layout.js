@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import NextTopLoader from "nextjs-toploader";
 import { AppWrapper } from "@/context/AppWrapper";
 import { Toaster } from "@/components/ui/shadcn/sonner";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 export const pacaembu = localFont({
   src: "../public/fonts/Pacaembu.woff2",
@@ -32,6 +33,7 @@ export default async function RootLayout({ children }) {
         </AppWrapper>
         <Toaster position="top-center" />
       </body>
+      <GoogleAnalytics gaId="G-CRRQ82QWDD" />
     </html>
   );
 }
