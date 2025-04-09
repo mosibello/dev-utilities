@@ -9,11 +9,14 @@ const Footer = () => {
         <div className="u__border-top u__bg-white py-3">
           <Container className="text-center">
             <p className="mb-0" style={{ fontSize: `0.85rem` }}>
-              © Copyright{" "}
-              <a href="/" className="">
-                {organization || ``}
+              © {new Date().getFullYear()}{" "}
+              <a
+                href="https://bokharilovesyou.com/"
+                target="_blank"
+                className=""
+              >
+                {`bokharilovesyou.` || ``}
               </a>{" "}
-              {new Date().getFullYear()}
             </p>
           </Container>
         </div>

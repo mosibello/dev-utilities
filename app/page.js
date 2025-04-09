@@ -4,7 +4,7 @@ import Heading from "@/components/ui/Heading";
 import Paragraph from "@/components/ui/Paragraph";
 import JsonFormatter from "@/components/modules/JsonFormatter";
 import Button from "@/components/ui/Button";
-import { SCHEMA__HomepageData } from "@/lib/schema";
+import { SCHEMA__UtilApps } from "@/lib/schema";
 
 export default async function Home() {
   return (
@@ -26,7 +26,7 @@ export default async function Home() {
           </Container>
 
           <Container className="mt-[2.5rem] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {SCHEMA__HomepageData.map((elem, idx) => {
+            {SCHEMA__UtilApps.map((elem, idx) => {
               const { heading, description, destination } = elem;
               return (
                 <div
