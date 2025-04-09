@@ -34,7 +34,7 @@ export default async function JsonFormatterIndex() {
               <Paragraph>
                 You can use this JSON formatter to beautify your JSON and make
                 it easier to read. Just paste your minified JSON and get the
-                formatted result. Made with 💜 by the developers building Jam.
+                formatted result. Made with 💜.
               </Paragraph>
               <Heading className="u__h5 mt-[2rem] mb-[1rem]">
                 How to Use JSON Online Formatter
