@@ -2,8 +2,9 @@ import Bounded from "@/components/wrappers/Bounded";
 import Container from "@/components/wrappers/Container";
 import Heading from "@/components/ui/Heading";
 import Paragraph from "@/components/ui/Paragraph";
-import QueryParamsToJson from "@/components/modules/QueryParamsToJson";
+import QueryParamsToJson from "@/components/partials/QueryParamsToJson";
 import { getMetaData } from "@/lib/seo";
+import StaticCTA from "@/components/partials/StaticCTA";
 
 export default async function Page() {
   return (
@@ -28,6 +29,11 @@ export default async function Page() {
               <div className="c__util-card border bg-card text-card-foreground flex-1 transition flex flex-col p-6 hover:shadow-none shadow-none rounded-xl">
                 <QueryParamsToJson />
               </div>
+            </div>
+          </Container>
+          <Container className="mt-[2.5rem]">
+            <div className="c__util-container">
+              <StaticCTA />
             </div>
           </Container>
           <Container className="mt-[2rem]">
@@ -84,7 +90,7 @@ export default async function Page() {
 export const generateMetadata = async () => {
   const data = {
     meta_title: `Query Params to JSON Converter | Free, Open Source & Ad-free | Bokhari Loves You`,
-    meta_description: `This free tool is a quick and easy way to convert URL query parameters into JSON format. If you work with web applications, APIs, or data manipulation, you can use Jam's tool to transform query strings into structured JSON objects.`,
+    meta_description: `This free tool is a quick and easy way to convert URL query parameters into JSON format. If you work with web applications, APIs, or data manipulation, you can use this tool to transform query strings into structured JSON objects.`,
     slug: {
       current: `query-params-to-json`,
     },

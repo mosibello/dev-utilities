@@ -2,8 +2,9 @@ import Bounded from "@/components/wrappers/Bounded";
 import Container from "@/components/wrappers/Container";
 import Heading from "@/components/ui/Heading";
 import Paragraph from "@/components/ui/Paragraph";
-import JsonFormatter from "@/components/modules/JsonFormatter";
+import JsonFormatter from "@/components/partials/JsonFormatter";
 import { getMetaData } from "@/lib/seo";
+import StaticCTA from "@/components/partials/StaticCTA";
 
 export default async function Page() {
   return (
@@ -28,6 +29,11 @@ export default async function Page() {
               <div className="c__util-card border bg-card text-card-foreground flex-1 transition flex flex-col p-6 hover:shadow-none shadow-none rounded-xl">
                 <JsonFormatter />
               </div>
+            </div>
+          </Container>
+          <Container className="mt-[2.5rem]">
+            <div className="c__util-container">
+              <StaticCTA />
             </div>
           </Container>
           <Container className="mt-[2rem]">
