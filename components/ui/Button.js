@@ -40,10 +40,19 @@ const Button = ({
               <div className="c__button__content">
                 {icon && iconPosition === "before" && (
                   <>
-                    <figure className="c__button__icon">{parse(icon)}</figure>
+                    <figure className="c__button__icon c__button__icon--before">
+                      {parse(icon)}
+                    </figure>
                   </>
                 )}
                 <span>{title}</span>
+                {icon && iconPosition === "after" && (
+                  <>
+                    <figure className="c__button__icon c__button__icon--after">
+                      {parse(icon)}
+                    </figure>
+                  </>
+                )}
                 <figure className="c__button__loading-icon">
                   <svg className="c__spinner" viewBox="0 0 50 50">
                     <circle
@@ -83,10 +92,19 @@ const Button = ({
                 <div className="c__button__content">
                   {icon && iconPosition === "before" && (
                     <>
-                      <figure className="c__button__icon">{parse(icon)}</figure>
+                      <figure className="c__button__icon c__button__icon--before">
+                        {parse(icon)}
+                      </figure>
                     </>
                   )}
                   <span>{title}</span>
+                  {icon && iconPosition === "after" && (
+                    <>
+                      <figure className="c__button__icon c__button__icon--after">
+                        {parse(icon)}
+                      </figure>
+                    </>
+                  )}
                 </div>
               </span>
             </Link>

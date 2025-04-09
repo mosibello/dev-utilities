@@ -26,7 +26,12 @@
           justify-content: center;
         }
         &__icon {
-          padding-right: 0.5rem;
+          &--before {
+            padding-right: 0.5rem;
+          }
+          &--after {
+            padding-left: 0.5rem;
+          }
           display: flex;
           svg {
             display: flex;
