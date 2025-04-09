@@ -6,7 +6,7 @@
   --t-secondary-branding-hover-color: #fafafa;
   /* Buttons */
   --t-button-padding: 0.6rem 1.6rem;
-  --t-button-small-padding: 0.5rem 1.4rem;
+  --t-button-small-padding: 0.4rem 1.4rem;
   --t-button-border-radius: 8px;
   /* Typography */
   --t-heading-color: #291643;
@@ -24,8 +24,8 @@
     var(--t-font-family-system);
   --t-font-family-body: "ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
     var(--t-font-family-system);
-  --t-font-weight-heading: 700;
-  --t-font-weight-button: 700;
+  --t-font-weight-heading: 600;
+  --t-font-weight-button: 600;
   --t-font-family-button: var(--t-font-family-heading);
   /* Font sizes */
   --t-font-size-d1: 3rem;

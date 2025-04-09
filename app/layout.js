@@ -12,10 +12,9 @@ export const pacaembu = localFont({
 });
 
 export const metadata = {
-  title:
-    "Free Stock Photos, Royalty Free Stock Images & Copyright Free Pictures | Mujmua",
+  title: "Open Source Developer Tools | Free Utilities | Bokhari Loves You",
   description:
-    "Free stock photos & videos you can use everywhere. Browse millions of high-quality royalty free stock images & copyright free pictures. No attribution required.",
+    "I love to create. Here are fast, free, open source, ad-free tools. Simplify your coding tasks with utilities like Base64 encode/decode, URL encode/decode, HEX to RGB converter, Timestamp to Date converter, and more.",
 };
 
 export default async function RootLayout({ children }) {
