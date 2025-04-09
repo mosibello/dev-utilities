@@ -34,7 +34,7 @@ export default async function Home() {
                   className="rounded-lg border bg-card text-card-foreground shadow-sm flex flex-1 u__position-relative u__transition u__translate"
                 >
                   <div className="p-6 items-baseline flex flex-col">
-                    <Heading tag="h2" className="u__h4 mb-[0.75rem]">
+                    <Heading tag="h2" className="u__h5 mb-[0.75rem]">
                       {heading}
                     </Heading>
                     <Paragraph className="mb-[2rem]">{description}</Paragraph>
