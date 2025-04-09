@@ -2,11 +2,11 @@ import Bounded from "@/components/wrappers/Bounded";
 import Container from "@/components/wrappers/Container";
 import Heading from "@/components/ui/Heading";
 import Paragraph from "@/components/ui/Paragraph";
-import JsonFormatter from "@/components/modules/JsonFormatter";
+import { getMetaData } from "@/lib/seo";
 import Button from "@/components/ui/Button";
 import { SCHEMA__UtilApps } from "@/lib/schema";
 
-export default async function Home() {
+export default async function Page() {
   return (
     <>
       <Bounded className="b__size-fit-to-screen b__hero_variant01 relative">
@@ -55,3 +55,15 @@ export default async function Home() {
     </>
   );
 }
+
+export const generateMetadata = async () => {
+  const data = {
+    meta_title: `Open Source Developer Tools | Free Utilities | Bokhari Loves You`,
+    meta_description: `I love to create. Here are fast, free, open source, ad-free tools. Simplify your coding tasks with utilities like Base64 encode/decode, URL encode/decode, HEX to RGB converter, Timestamp to Date converter, and more.`,
+    slug: {
+      current: `index`,
+    },
+  };
+  if (!data) return {};
+  return getMetaData(data);
+};

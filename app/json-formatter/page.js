@@ -3,12 +3,7 @@ import Container from "@/components/wrappers/Container";
 import Heading from "@/components/ui/Heading";
 import Paragraph from "@/components/ui/Paragraph";
 import JsonFormatter from "@/components/modules/JsonFormatter";
-
-export const metadata = {
-  title: "JSON formatter | Free, Open Source & Ad-free | Bokhari Loves You",
-  description:
-    "Beautify and structure raw JSON data with proper indentation and formatting, making it easier to read, edit, and validate JSON content.",
-};
+import { getMetaData } from "@/lib/seo";
 
 export default async function JsonFormatterIndex() {
   return (
@@ -102,3 +97,15 @@ export default async function JsonFormatterIndex() {
     </>
   );
 }
+
+export const generateMetadata = async () => {
+  const data = {
+    meta_title: `JSON formatter | Free, Open Source & Ad-free | Bokhari Loves You`,
+    meta_description: `Beautify and structure raw JSON data with proper indentation and formatting, making it easier to read, edit, and validate JSON content.`,
+    slug: {
+      current: `json-formatter`,
+    },
+  };
+  if (!data) return {};
+  return getMetaData(data);
+};
