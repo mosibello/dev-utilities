@@ -49,7 +49,7 @@ const HeaderVariant01 = () => {
                   <div className="ps-3">
                     <Button
                       theme={`secondary`}
-                      title={`Back to bokharilovesyou.com`}
+                      title={`Bokharilovesyou.com`}
                       destination={`https://bokharilovesyou.com/`}
                       target="_blank"
                       size="small"
