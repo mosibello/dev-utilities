@@ -60,5 +60,6 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description: `Page Speed Insights report for ${report?.url ?? ""}`,
+    robots: { index: false, follow: false },
   };
 }

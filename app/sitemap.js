@@ -22,7 +22,8 @@ function getPageFiles(dir, baseDir = dir) {
     } else if (
       (file === "page.js" || file === "page.tsx") &&
       !dir.includes("(") && // Skip route groups
-      !dir.includes("@") // Skip parallel routes
+      !dir.includes("@") && // Skip parallel routes
+      !dir.includes("[") // Skip dynamic routes
     ) {
       // Found a page file, convert file path to route
       let route = dir.replace(baseDir, "").replace(/\\/g, "/");
