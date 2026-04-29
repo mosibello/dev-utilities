@@ -197,6 +197,7 @@ export default function PageSpeedTester() {
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState({ strategy: "", runIndex: 0, totalRuns: 0 });
+  const [cooldown, setCooldown] = useState(0);
   const abortRef = useRef(false);
 
   const selectedStrategies = Object.entries(strategies)
@@ -234,8 +235,15 @@ export default function PageSpeedTester() {
           const result = extractResult(data);
           if (strategy === "mobile") setMobileResults((p) => [...p, result]);
           else setDesktopResults((p) => [...p, result]);
-          if (i < runs - 1 || selectedStrategies.indexOf(strategy) < selectedStrategies.length - 1) {
-            await delay(1200);
+          const isLast = i === runs - 1 && selectedStrategies.indexOf(strategy) === selectedStrategies.length - 1;
+          if (!isLast) {
+            const WAIT = 30;
+            for (let s = WAIT; s > 0; s--) {
+              if (abortRef.current) break;
+              setCooldown(s);
+              await delay(1000);
+            }
+            setCooldown(0);
           }
         }
         if (abortRef.current) break;
@@ -248,7 +256,7 @@ export default function PageSpeedTester() {
     setStatus("done");
   };
 
-  const handleStop = () => { abortRef.current = true; setStatus("done"); };
+  const handleStop = () => { abortRef.current = true; setCooldown(0); setStatus("done"); };
 
   const handleClear = () => {
     setMobileResults([]);
@@ -347,8 +355,10 @@ export default function PageSpeedTester() {
         )}
         {running && (
           <span className="text-sm text-muted-foreground">
-            {progress.strategy === "mobile" ? "Mobile" : "Desktop"} · Test {progress.runIndex + 1}/{runs}
-            {selectedStrategies.length > 1 && ` · ${progress.strategy}`}
+            {cooldown > 0
+              ? `Waiting ${cooldown}s before next run…`
+              : `${progress.strategy === "mobile" ? "Mobile" : "Desktop"} · Test ${progress.runIndex + 1}/${runs}`
+            }
           </span>
         )}
       </div>
