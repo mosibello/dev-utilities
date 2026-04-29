@@ -217,11 +217,16 @@ export default function PageSpeedTester() {
         for (let i = 0; i < runs; i++) {
           if (abortRef.current) break;
           setProgress({ strategy, runIndex: i, totalRuns: runs });
-          const res = await fetch(
-            `/api/pagespeed?url=${encodeURIComponent(target)}&strategy=${strategy}`
-          );
+          const psiUrl = new URL("https://parasbokhari--0d24ef0843f011f1ae8342b51c65c3df.web.val.run");
+          psiUrl.searchParams.set("url", target);
+          psiUrl.searchParams.set("strategy", strategy);
+
+          const res = await fetch(psiUrl.toString(), { cache: "no-store" });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err?.error?.message || `PageSpeed API error (HTTP ${res.status})`);
+          }
           const data = await res.json();
-          if (data.error) throw new Error(data.error);
           const result = extractResult(data);
           if (strategy === "mobile") setMobileResults((p) => [...p, result]);
           else setDesktopResults((p) => [...p, result]);
