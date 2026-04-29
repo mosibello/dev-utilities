@@ -325,6 +325,76 @@ function SplitDiffView({ parts, original, modified }) {
   );
 }
 
+function SplitInlineView({ parts, original, modified, mode }) {
+  const hasChanges = parts.some((p) => p.added || p.removed);
+  const unit = mode === "chars" ? "char" : "word";
+
+  const addedCount = parts.filter((p) => p.added).reduce((s, p) => s + p.value.length, 0);
+  const removedCount = parts.filter((p) => p.removed).reduce((s, p) => s + p.value.length, 0);
+
+  const handleCopy = async (text) => {
+    try { await navigator.clipboard.writeText(text); } catch {}
+  };
+
+  if (!hasChanges) {
+    return (
+      <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+        <span className="font-medium">No differences found.</span> Both texts are identical.
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col border rounded-lg overflow-hidden">
+      {/* Stats bar */}
+      <div className="flex text-sm border-b">
+        <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-red-50/70 border-r">
+          <span className="font-semibold text-red-700">{removedCount} {unit}{removedCount !== 1 ? "s" : ""} removed</span>
+          <button
+            onClick={() => handleCopy(original)}
+            className="ml-auto text-xs border rounded px-2 py-0.5 bg-background hover:bg-muted transition-colors"
+          >
+            Copy
+          </button>
+        </div>
+        <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-green-50/70">
+          <span className="font-semibold text-green-700">{addedCount} {unit}{addedCount !== 1 ? "s" : ""} added</span>
+          <button
+            onClick={() => handleCopy(modified)}
+            className="ml-auto text-xs border rounded px-2 py-0.5 bg-background hover:bg-muted transition-colors"
+          >
+            Copy
+          </button>
+        </div>
+      </div>
+
+      {/* Column headers */}
+      <div className="grid grid-cols-2 border-b">
+        <div className="px-3 py-1.5 bg-muted text-xs font-semibold text-muted-foreground border-r">Original</div>
+        <div className="px-3 py-1.5 bg-muted text-xs font-semibold text-muted-foreground">Modified</div>
+      </div>
+
+      {/* Split content */}
+      <div className="grid grid-cols-2 divide-x font-mono text-sm">
+        <div className="p-4 whitespace-pre-wrap break-words leading-relaxed bg-red-50/20">
+          {parts.filter((p) => !p.added).map((part, i) =>
+            part.removed
+              ? <mark key={i} className="bg-red-100 text-red-900 rounded-[2px] not-italic">{part.value}</mark>
+              : <span key={i}>{part.value}</span>
+          )}
+        </div>
+        <div className="p-4 whitespace-pre-wrap break-words leading-relaxed bg-green-50/20">
+          {parts.filter((p) => !p.removed).map((part, i) =>
+            part.added
+              ? <mark key={i} className="bg-green-100 text-green-900 rounded-[2px] not-italic">{part.value}</mark>
+              : <span key={i}>{part.value}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function InlineDiffView({ parts }) {
   const hasChanges = parts.some((p) => p.added || p.removed);
 
@@ -409,23 +479,21 @@ const DiffCheckerText = () => {
             </button>
           ))}
         </div>
-        {mode === "lines" && (
-          <div className="flex gap-1 p-1 bg-muted rounded-lg">
-            {["split", "inline"].map((v) => (
-              <button
-                key={v}
-                onClick={() => setViewMode(v)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium capitalize transition-colors ${
-                  viewMode === v
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex gap-1 p-1 bg-muted rounded-lg">
+          {["split", "inline"].map((v) => (
+            <button
+              key={v}
+              onClick={() => setViewMode(v)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium capitalize transition-colors ${
+                viewMode === v
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Input areas */}
@@ -470,8 +538,10 @@ const DiffCheckerText = () => {
 
       {/* Results */}
       {compared && result && (
-        mode === "lines" && viewMode === "split" ? (
-          <SplitDiffView parts={result} original={original} modified={modified} />
+        viewMode === "split" ? (
+          mode === "lines"
+            ? <SplitDiffView parts={result} original={original} modified={modified} />
+            : <SplitInlineView parts={result} original={original} modified={modified} mode={mode} />
         ) : (
           <InlineDiffView parts={result} />
         )
