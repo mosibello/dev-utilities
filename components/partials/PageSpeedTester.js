@@ -217,9 +217,13 @@ export default function PageSpeedTester() {
         for (let i = 0; i < runs; i++) {
           if (abortRef.current) break;
           setProgress({ strategy, runIndex: i, totalRuns: runs });
-          const psiUrl = new URL("https://parasbokhari--0d24ef0843f011f1ae8342b51c65c3df.web.val.run");
+          const psiUrl = new URL("https://www.googleapis.com/pagespeedonline/v5/runPagespeed");
           psiUrl.searchParams.set("url", target);
           psiUrl.searchParams.set("strategy", strategy);
+          psiUrl.searchParams.set("category", "performance");
+          if (process.env.NEXT_PUBLIC_GOOGLE_PAGESPEED_API_KEY) {
+            psiUrl.searchParams.set("key", process.env.NEXT_PUBLIC_GOOGLE_PAGESPEED_API_KEY);
+          }
 
           const res = await fetch(psiUrl.toString(), { cache: "no-store" });
           if (!res.ok) {
