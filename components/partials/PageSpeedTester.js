@@ -1,37 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
   ScoreRing, AverageCard, RunCard,
   scoreTextClass, scoreBgClass,
   buildAverage, METRICS, metricScoreClass, formatAvgNumeric,
 } from "./PageSpeedReportView";
-
-// ─── helpers ─────────────────────────────────────────────────────────────────
-
-function extractResult(data) {
-  const lhr = data.lighthouseResult;
-  const audits = lhr.audits;
-  const pick = (key) => ({
-    display: audits[key]?.displayValue ?? "—",
-    score: audits[key]?.score ?? null,
-    numeric: audits[key]?.numericValue ?? null,
-  });
-  return {
-    score: Math.round((lhr.categories.performance.score ?? 0) * 100),
-    fcp: pick("first-contentful-paint"),
-    lcp: pick("largest-contentful-paint"),
-    tbt: pick("total-blocking-time"),
-    cls: pick("cumulative-layout-shift"),
-    si: pick("speed-index"),
-    tti: pick("interactive"),
-  };
-}
-
-function delay(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
 
 // ─── sub-components ───────────────────────────────────────────────────────────
 
@@ -88,8 +63,8 @@ function StrategySection({ strategy, results, running, progress }) {
   );
 }
 
-function SavePanel({ url, runs, mobileResults, desktopResults, onReset }) {
-  const [saveState, setSaveState] = useState("idle"); // idle | saving | saved | error
+function SavePanel({ url, runs, mobileResults, desktopResults }) {
+  const [saveState, setSaveState] = useState("idle");
   const [label, setLabel] = useState("");
   const [reportId, setReportId] = useState(null);
   const [saveError, setSaveError] = useState(null);
@@ -168,9 +143,7 @@ function SavePanel({ url, runs, mobileResults, desktopResults, onReset }) {
         placeholder="Label (optional) — e.g. Homepage · Before deploy"
         className="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       />
-      {saveError && (
-        <p className="text-xs text-red-600">{saveError}</p>
-      )}
+      {saveError && <p className="text-xs text-red-600">{saveError}</p>}
       <div className="flex gap-2">
         <button
           onClick={handleSave}
@@ -198,71 +171,83 @@ export default function PageSpeedTester() {
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState({ strategy: "", runIndex: 0, totalRuns: 0 });
   const [cooldown, setCooldown] = useState(0);
-  const abortRef = useRef(false);
+  const workerRef = useRef(null);
+
+  // Terminate worker on unmount
+  useEffect(() => {
+    return () => { workerRef.current?.terminate(); };
+  }, []);
 
   const selectedStrategies = Object.entries(strategies)
     .filter(([, v]) => v)
     .map(([k]) => k);
 
-  const handleRun = async () => {
+  const handleRun = () => {
     if (!url.trim() || !selectedStrategies.length) return;
     const target = url.trim().startsWith("http") ? url.trim() : `https://${url.trim()}`;
+
     setStatus("running");
     setError(null);
     setMobileResults([]);
     setDesktopResults([]);
-    abortRef.current = false;
+    setCooldown(0);
 
-    try {
-      for (const strategy of selectedStrategies) {
-        for (let i = 0; i < runs; i++) {
-          if (abortRef.current) break;
-          setProgress({ strategy, runIndex: i, totalRuns: runs });
-          const psiUrl = new URL("https://www.googleapis.com/pagespeedonline/v5/runPagespeed");
-          psiUrl.searchParams.set("url", target);
-          psiUrl.searchParams.set("strategy", strategy);
-          psiUrl.searchParams.set("category", "performance");
-          if (process.env.NEXT_PUBLIC_GOOGLE_PAGESPEED_API_KEY) {
-            psiUrl.searchParams.set("key", process.env.NEXT_PUBLIC_GOOGLE_PAGESPEED_API_KEY);
-          }
+    const worker = new Worker("/pagespeed-worker.js");
+    workerRef.current = worker;
 
-          const res = await fetch(psiUrl.toString(), { cache: "no-store" });
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err?.error?.message || `PageSpeed API error (HTTP ${res.status})`);
-          }
-          const data = await res.json();
-          const result = extractResult(data);
-          if (strategy === "mobile") setMobileResults((p) => [...p, result]);
-          else setDesktopResults((p) => [...p, result]);
-          const isLast = i === runs - 1 && selectedStrategies.indexOf(strategy) === selectedStrategies.length - 1;
-          if (!isLast) {
-            const WAIT = 30;
-            for (let s = WAIT; s > 0; s--) {
-              if (abortRef.current) break;
-              setCooldown(s);
-              await delay(1000);
-            }
-            setCooldown(0);
-          }
-        }
-        if (abortRef.current) break;
+    worker.onmessage = (e) => {
+      const msg = e.data;
+      if (msg.type === "progress") {
+        setProgress({ strategy: msg.strategy, runIndex: msg.runIndex, totalRuns: msg.totalRuns });
+      } else if (msg.type === "result") {
+        if (msg.strategy === "mobile") setMobileResults((p) => [...p, msg.result]);
+        else setDesktopResults((p) => [...p, msg.result]);
+      } else if (msg.type === "cooldown") {
+        setCooldown(msg.seconds);
+      } else if (msg.type === "done") {
+        setCooldown(0);
+        setStatus("done");
+        worker.terminate();
+        workerRef.current = null;
+      } else if (msg.type === "error") {
+        setError(msg.message);
+        setStatus("error");
+        setCooldown(0);
+        worker.terminate();
+        workerRef.current = null;
       }
-    } catch (err) {
-      setError(err.message || "Something went wrong");
+    };
+
+    worker.onerror = (e) => {
+      setError(e.message || "Worker error");
       setStatus("error");
-      return;
-    }
-    setStatus("done");
+      setCooldown(0);
+      worker.terminate();
+      workerRef.current = null;
+    };
+
+    worker.postMessage({
+      type: "start",
+      target,
+      runs,
+      strategies: selectedStrategies,
+      apiKey: process.env.NEXT_PUBLIC_GOOGLE_PAGESPEED_API_KEY || null,
+    });
   };
 
-  const handleStop = () => { abortRef.current = true; setCooldown(0); setStatus("done"); };
+  const handleStop = () => {
+    workerRef.current?.terminate();
+    workerRef.current = null;
+    setCooldown(0);
+    setStatus("done");
+  };
 
   const handleClear = () => {
     setMobileResults([]);
     setDesktopResults([]);
     setStatus("idle");
     setError(null);
+    setCooldown(0);
   };
 
   const running = status === "running";
