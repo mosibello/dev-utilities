@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 function parseCsvText(text) {
   const result = Papa.parse(text.trim(), {
@@ -50,35 +51,160 @@ function cellChanged(a, b) {
   return String(a ?? "").trim() !== String(b ?? "").trim();
 }
 
-function computeDiff(leftData, rightData, ignoredCols) {
-  const maxRows = Math.max(leftData.length, rightData.length);
+function pluralize(count, singular, plural = `${singular}s`) {
+  return count === 1 ? singular : plural;
+}
+
+function normalizeCell(value) {
+  return String(value ?? "").trim();
+}
+
+function findRowKeyColumn(leftData, rightData, ignoredCols, headers = []) {
   const maxCols = Math.max(
+    0,
     ...leftData.map((r) => r.length),
-    ...rightData.map((r) => r.length)
+    ...rightData.map((r) => r.length),
+    headers.length
   );
+  let best = null;
 
-  const rows = [];
-  for (let r = 0; r < maxRows; r++) {
-    const leftRow = leftData[r] || [];
-    const rightRow = rightData[r] || [];
-    const cells = [];
-    let rowHasDiff = false;
+  for (let c = 0; c < maxCols; c++) {
+    if (ignoredCols.has(c)) continue;
 
-    for (let c = 0; c < maxCols; c++) {
-      const ignored = ignoredCols.has(c);
-      const lv = leftRow[c] ?? "";
-      const rv = rightRow[c] ?? "";
-      const changed = !ignored && cellChanged(lv, rv);
-      if (changed) rowHasDiff = true;
-      cells.push({ left: lv, right: rv, changed, ignored });
+    const leftValues = leftData.map((row) => normalizeCell(row[c])).filter(Boolean);
+    const rightValues = rightData.map((row) => normalizeCell(row[c])).filter(Boolean);
+    if (!leftValues.length || !rightValues.length) continue;
+
+    const leftSet = new Set(leftValues);
+    const rightSet = new Set(rightValues);
+    if (leftSet.size !== leftValues.length || rightSet.size !== rightValues.length) continue;
+
+    const overlap = [...leftSet].filter((value) => rightSet.has(value)).length;
+    const overlapRatio = overlap / Math.min(leftSet.size, rightSet.size);
+    if (overlapRatio < 0.5) continue;
+
+    const header = normalizeCell(headers[c]).toLowerCase();
+    let score = overlapRatio * 100 + overlap;
+    if (/^(id|.*_id|.*id)$/.test(header)) score += 60;
+    if (/(^|_)(key|slug|path|sku|code)($|_)/.test(header)) score += 35;
+    if (/(^|_)(name|title)($|_)/.test(header)) score += 10;
+    if (c === 0) score += 8;
+
+    if (!best || score > best.score) {
+      best = { index: c, score, label: headers[c] || `Col ${c + 1}` };
     }
-
-    const rowMissing = r >= leftData.length;
-    const rowExtra = r >= rightData.length;
-    rows.push({ cells, rowHasDiff, rowMissing, rowExtra });
   }
 
-  return { rows, maxCols };
+  return best;
+}
+
+function buildCells(leftRow, rightRow, maxCols, ignoredCols) {
+  const cells = [];
+  let rowHasDiff = false;
+
+  for (let c = 0; c < maxCols; c++) {
+    const ignored = ignoredCols.has(c);
+    const lv = leftRow[c] ?? "";
+    const rv = rightRow[c] ?? "";
+    const changed = !ignored && cellChanged(lv, rv);
+    if (changed) rowHasDiff = true;
+    cells.push({ left: lv, right: rv, changed, ignored });
+  }
+
+  return { cells, rowHasDiff };
+}
+
+function createDiffRow({
+  leftRow = [],
+  rightRow = [],
+  leftIndex = null,
+  rightIndex = null,
+  maxCols,
+  ignoredCols,
+}) {
+  const { cells, rowHasDiff } = buildCells(leftRow, rightRow, maxCols, ignoredCols);
+  const rowAdded = leftIndex === null && rightIndex !== null;
+  const rowRemoved = leftIndex !== null && rightIndex === null;
+
+  return {
+    cells,
+    rowHasDiff: rowHasDiff || rowAdded || rowRemoved,
+    rowChanged: rowHasDiff && !rowAdded && !rowRemoved,
+    rowAdded,
+    rowRemoved,
+    originalIndex: leftIndex,
+    modifiedIndex: rightIndex,
+  };
+}
+
+function computeDiffByKey(leftData, rightData, ignoredCols, maxCols, keyCol) {
+  const leftByKey = new Map();
+  leftData.forEach((row, index) => {
+    leftByKey.set(normalizeCell(row[keyCol]), { row, index });
+  });
+
+  const matchedLeft = new Set();
+  const rows = rightData.map((rightRow, rightIndex) => {
+    const key = normalizeCell(rightRow[keyCol]);
+    const match = leftByKey.get(key);
+
+    if (!match) {
+      return createDiffRow({ rightRow, rightIndex, maxCols, ignoredCols });
+    }
+
+    matchedLeft.add(match.index);
+    return createDiffRow({
+      leftRow: match.row,
+      rightRow,
+      leftIndex: match.index,
+      rightIndex,
+      maxCols,
+      ignoredCols,
+    });
+  });
+
+  leftData.forEach((leftRow, leftIndex) => {
+    if (!matchedLeft.has(leftIndex)) {
+      rows.push(createDiffRow({ leftRow, leftIndex, maxCols, ignoredCols }));
+    }
+  });
+
+  return rows;
+}
+
+function computeDiffByPosition(leftData, rightData, ignoredCols, maxCols) {
+  const maxRows = Math.max(leftData.length, rightData.length);
+  const rows = [];
+
+  for (let r = 0; r < maxRows; r++) {
+    rows.push(
+      createDiffRow({
+        leftRow: leftData[r] || [],
+        rightRow: rightData[r] || [],
+        leftIndex: r < leftData.length ? r : null,
+        rightIndex: r < rightData.length ? r : null,
+        maxCols,
+        ignoredCols,
+      })
+    );
+  }
+
+  return rows;
+}
+
+function computeDiff(leftData, rightData, ignoredCols, headers = []) {
+  const maxCols = Math.max(
+    0,
+    ...leftData.map((r) => r.length),
+    ...rightData.map((r) => r.length),
+    headers.length
+  );
+  const keyColumn = findRowKeyColumn(leftData, rightData, ignoredCols, headers);
+  const rows = keyColumn
+    ? computeDiffByKey(leftData, rightData, ignoredCols, maxCols, keyColumn.index)
+    : computeDiffByPosition(leftData, rightData, ignoredCols, maxCols);
+
+  return { rows, maxCols, keyColumn };
 }
 
 function DropZone({ label, onData, onError }) {
@@ -238,12 +364,64 @@ function ColumnIgnoreSelector({ headers, ignoredCols, onToggle }) {
 function DiffTable({ diffResult, headers }) {
   const { rows, maxCols } = diffResult;
   const colHeaders = Array.from({ length: maxCols }, (_, i) => headers[i] || `Col ${i + 1}`);
+  const [showOnlyDiffs, setShowOnlyDiffs] = useState(false);
+  const [activeDiffIndex, setActiveDiffIndex] = useState(0);
+  const rowRefs = useRef({});
+  const tableScrollRef = useRef(null);
+  const headerRowRef = useRef(null);
+  const [headerRowHeight, setHeaderRowHeight] = useState(0);
 
-  const addedRows = rows.filter((r) => r.rowExtra).length;
-  const removedRows = rows.filter((r) => r.rowMissing).length;
-  const changedRows = rows.filter((r) => r.rowHasDiff && !r.rowExtra && !r.rowMissing).length;
+  const diffRowIndexes = useMemo(
+    () => rows.map((row, index) => (row.rowHasDiff ? index : null)).filter((index) => index !== null),
+    [rows]
+  );
+  const visibleRows = showOnlyDiffs
+    ? rows.map((row, index) => ({ row, index })).filter(({ row }) => row.rowHasDiff)
+    : rows.map((row, index) => ({ row, index }));
 
-  const hasAnyDiff = rows.some((r) => r.rowHasDiff || r.rowExtra || r.rowMissing);
+  const addedRows = rows.filter((r) => r.rowAdded).length;
+  const removedRows = rows.filter((r) => r.rowRemoved).length;
+  const changedRows = rows.filter((r) => r.rowChanged).length;
+  const hasAnyDiff = rows.some((r) => r.rowHasDiff);
+
+  useEffect(() => {
+    const headerRow = headerRowRef.current;
+    if (!headerRow) return;
+
+    const updateHeaderHeight = () => {
+      setHeaderRowHeight(headerRow.getBoundingClientRect().height);
+    };
+
+    updateHeaderHeight();
+
+    if (typeof ResizeObserver === "undefined") return;
+    const resizeObserver = new ResizeObserver(updateHeaderHeight);
+    resizeObserver.observe(headerRow);
+
+    return () => resizeObserver.disconnect();
+  }, [colHeaders.length]);
+
+  const scrollToDiff = (direction) => {
+    if (!diffRowIndexes.length) return;
+    const nextIndex = (activeDiffIndex + direction + diffRowIndexes.length) % diffRowIndexes.length;
+    const rowIndex = diffRowIndexes[nextIndex];
+    const row = rowRefs.current[rowIndex];
+    const scrollContainer = tableScrollRef.current;
+
+    setActiveDiffIndex(nextIndex);
+    if (!row || !scrollContainer) return;
+
+    const pageScrollX = window.scrollX;
+    const pageScrollY = window.scrollY;
+
+    scrollContainer.scrollTo({
+      top: row.offsetTop - scrollContainer.clientHeight / 2 + row.clientHeight / 2,
+      behavior: "smooth",
+    });
+
+    window.scrollTo(pageScrollX, pageScrollY);
+    window.requestAnimationFrame(() => window.scrollTo(pageScrollX, pageScrollY));
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -255,34 +433,78 @@ function DiffTable({ diffResult, headers }) {
         <div className="flex flex-wrap gap-3 text-sm">
           {changedRows > 0 && (
             <span className="flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded px-2.5 py-1">
-              <span className="font-bold">{changedRows}</span> changed rows
+              <span className="font-bold">{changedRows}</span> changed {pluralize(changedRows, "row")}
             </span>
           )}
           {addedRows > 0 && (
             <span className="flex items-center gap-1.5 bg-green-50 text-green-700 border border-green-200 rounded px-2.5 py-1">
-              <span className="font-bold">+{addedRows}</span> added rows
+              <span className="font-bold">+{addedRows}</span> added {pluralize(addedRows, "row")}
             </span>
           )}
           {removedRows > 0 && (
             <span className="flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 rounded px-2.5 py-1">
-              <span className="font-bold">-{removedRows}</span> removed rows
+              <span className="font-bold">-{removedRows}</span> removed {pluralize(removedRows, "row")}
             </span>
           )}
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
+        <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
+          <input
+            type="checkbox"
+            checked={showOnlyDiffs}
+            onChange={(e) => setShowOnlyDiffs(e.target.checked)}
+            className="rounded border-border"
+          />
+          Show differences only
+        </label>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {diffResult.keyColumn && (
+            <span className="hidden sm:inline">
+              Matched by <span className="font-medium text-foreground">{diffResult.keyColumn.label}</span>
+            </span>
+          )}
+          <span>
+            {diffRowIndexes.length ? activeDiffIndex + 1 : 0} / {diffRowIndexes.length}
+          </span>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => scrollToDiff(-1)}
+              disabled={!diffRowIndexes.length}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border bg-background text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Previous difference"
+              title="Previous difference"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToDiff(1)}
+              disabled={!diffRowIndexes.length}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border bg-background text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Next difference"
+              title="Next difference"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div ref={tableScrollRef} className="max-h-[70vh] overflow-auto rounded-lg border">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="bg-muted">
-              <th className="px-2 py-2 text-xs text-muted-foreground font-medium border-r border-b w-8 text-center">#</th>
+            <tr ref={headerRowRef} className="bg-muted">
+              <th className="sticky top-0 z-30 bg-muted px-2 py-2 text-xs text-muted-foreground font-medium border-r border-b w-8 text-center">#</th>
               {colHeaders.map((h, i) => {
                 const isIgnored = rows[0]?.cells[i]?.ignored;
                 return (
                   <th
                     key={i}
                     colSpan={2}
-                    className={`px-3 py-2 text-xs font-medium border-r border-b text-left ${
+                    className={`sticky top-0 z-20 bg-muted px-3 py-2 text-xs font-medium border-r border-b text-left ${
                       isIgnored ? "text-muted-foreground/50" : "text-muted-foreground"
                     }`}
                   >
@@ -293,31 +515,57 @@ function DiffTable({ diffResult, headers }) {
               })}
             </tr>
             <tr className="bg-muted/50">
-              <th className="border-r border-b" />
+              <th
+                className="sticky z-30 bg-muted/95 border-r border-b"
+                style={{ top: `${headerRowHeight}px` }}
+              />
               {colHeaders.map((_, i) => (
                 <React.Fragment key={i}>
-                  <th className="px-2 py-1 text-[10px] text-muted-foreground font-normal border-r border-b">Original</th>
-                  <th className="px-2 py-1 text-[10px] text-muted-foreground font-normal border-r border-b">Modified</th>
+                  <th
+                    className="sticky z-20 bg-muted/95 px-2 py-1 text-[10px] text-muted-foreground font-normal border-r border-b"
+                    style={{ top: `${headerRowHeight}px` }}
+                  >
+                    Original
+                  </th>
+                  <th
+                    className="sticky z-20 bg-muted/95 px-2 py-1 text-[10px] text-muted-foreground font-normal border-r border-b"
+                    style={{ top: `${headerRowHeight}px` }}
+                  >
+                    Modified
+                  </th>
                 </React.Fragment>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, ri) => {
-              const rowBg = row.rowMissing
-                ? "bg-red-50"
-                : row.rowExtra
+            {visibleRows.map(({ row, index }) => {
+              const rowBg = row.rowAdded
                 ? "bg-green-50"
+                : row.rowRemoved
+                ? "bg-red-50"
+                : "";
+              const visibleNumber = row.modifiedIndex ?? row.originalIndex ?? index;
+              const rowChangedCellClass = row.rowChanged
+                ? "shadow-[inset_0_1px_0_rgb(251_191_36_/_0.8),inset_0_-1px_0_rgb(251_191_36_/_0.8)]"
+                : "";
+              const rowChangedEdgeClass = row.rowChanged
+                ? "border-l-2 border-l-amber-400"
                 : "";
               return (
-                <tr key={ri} className={`${rowBg} hover:bg-muted/20 transition-colors`}>
-                  <td className="px-2 py-1.5 text-xs text-muted-foreground border-r border-b text-center font-mono">
-                    {ri + 1}
+                <tr
+                  key={index}
+                  ref={(node) => {
+                    if (node) rowRefs.current[index] = node;
+                  }}
+                  className={`${rowBg} hover:bg-muted/20 transition-colors`}
+                >
+                  <td className={`px-2 py-1.5 text-xs text-muted-foreground border-r border-b text-center font-mono ${rowChangedCellClass} ${rowChangedEdgeClass}`}>
+                    {visibleNumber + 1}
                   </td>
                   {row.cells.map((cell, ci) => (
                     <React.Fragment key={ci}>
                       <td
-                        className={`px-2 py-1.5 border-r border-b font-mono text-xs max-w-[200px] truncate ${
+                        className={`px-2 py-1.5 border-r border-b font-mono text-xs max-w-[200px] truncate ${rowChangedCellClass} ${
                           cell.changed ? "bg-red-50 text-red-900" : cell.ignored ? "opacity-40" : ""
                         }`}
                         title={String(cell.left ?? "")}
@@ -325,7 +573,7 @@ function DiffTable({ diffResult, headers }) {
                         {String(cell.left ?? "")}
                       </td>
                       <td
-                        className={`px-2 py-1.5 border-r border-b font-mono text-xs max-w-[200px] truncate ${
+                        className={`px-2 py-1.5 border-r border-b font-mono text-xs max-w-[200px] truncate ${rowChangedCellClass} ${
                           cell.changed ? "bg-green-50 text-green-900" : cell.ignored ? "opacity-40" : ""
                         }`}
                         title={String(cell.right ?? "")}
@@ -372,7 +620,7 @@ const DiffCheckerCsv = () => {
 
   const handleCompare = () => {
     if (!leftData || !rightData) return;
-    const result = computeDiff(effectiveLeft, effectiveRight, ignoredCols);
+    const result = computeDiff(effectiveLeft, effectiveRight, ignoredCols, headers);
     setDiffResult(result);
     setCompared(true);
   };
